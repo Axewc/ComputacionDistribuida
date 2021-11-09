@@ -35,13 +35,12 @@ defmodule Graph do
     cond do
       u == nil or v == nil -> graph
       u == v -> graph
-      true ->
-	u_neighs = Map.get(graph, u)
-	new_u_neighs = MapSet.put(u_neighs, v)
-	graph = Map.put(graph, u, new_u_neighs)
-	v_neighs = Map.get(graph, v)
-	new_v_neighs = MapSet.put(v_neighs, u)
-	Map.put(graph, v, new_v_neighs)
+      true -> u_neighs = Map.get(graph, u)
+	    new_u_neighs = MapSet.put(u_neighs, v)
+	    graph = Map.put(graph, u, new_u_neighs)
+	    v_neighs = Map.get(graph, v)
+	    new_v_neighs = MapSet.put(v_neighs, u)
+	    Map.put(graph, v, new_v_neighs)
     end
   end
 
@@ -49,20 +48,58 @@ defmodule Graph do
     Enum.random(Map.keys(graph))
   end
   
-  def bfs(graph, src) do
-    :ok
+
+  def dfs(graph, src) do
+    padre = nil
+    hijos = []
+    sin_explorar = Map.get(graph,self())
+    if src == self() and padre == nil do
+      padre = self()
+      #explore()
+    end
+
+    receive do
+      {:m, caller} -> 
+        if padre == nil do
+          padre = caller
+          Map.delete(sin_explorar,caller)
+          #explore()
+        else
+          send(caller,{:already,self()})
+          Map.delete(sin_explorar,caller)
+        end
+
+      {:already, caller} -> :ok
+        #explore()
+
+      {:parent, caller} -> 
+        hijos = hijos ++ [caller]
+        #explore()
+    end
+
+    procedure explore() do                        #aqui esta lo tricki
+      if sin_explorar != nil do
+        p = Enum.random(sin_explorar)
+        Map.delete(sin_explorar,p)
+        send(p,{:m,self()})
+      else
+        if padre != self() then
+          send(padre,{:parent,self()})
+        end
+      end
+    end
   end
 
   def bfs(graph) do
     bfs(graph, random_src(graph))
   end
     
-  def dfs(graph, src) do
+  def bfs(graph, src) do
     :ok
   end
 
   def dfs(graph) do
     dfs(graph, random_src(graph))
   end
-  
+
 end
